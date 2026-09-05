@@ -170,7 +170,10 @@ opcode! {
         offset: u64 = 0,
         /// specified for write operations, contains a bitwise OR of per-I/O flags,
         /// as described in the `preadv2(2)` man page.
-        rw_flags: i32 = 0
+        rw_flags: i32 = 0,
+        /// Write stream id (Linux 6.16+); `0` means no stream.
+        /// Older kernels ignore this field.
+        write_stream: u8 = 0
     }
 
     pub const CODE = sys::IORING_OP_WRITEV;
@@ -179,7 +182,8 @@ opcode! {
         let Writev {
             fd,
             iovec, len, offset,
-            ioprio, rw_flags
+            ioprio, rw_flags,
+            write_stream
         } = self;
 
         let mut sqe = sqe_zeroed();
@@ -190,6 +194,7 @@ opcode! {
         sqe.len = len;
         sqe.__bindgen_anon_1.off = offset;
         sqe.__bindgen_anon_3.rw_flags = rw_flags as _;
+        sqe.__bindgen_anon_5.__bindgen_anon_2.write_stream = write_stream;
         Entry(sqe)
     }
 }
@@ -286,7 +291,10 @@ opcode! {
         offset: u64 = 0,
         /// Specified for write operations, contains a bitwise OR of per-I/O flags, as described in
         /// the `pwritev2(2)` man page.
-        rw_flags: i32 = 0
+        rw_flags: i32 = 0,
+        /// Write stream id (Linux 6.16+); `0` means no stream.
+        /// Older kernels ignore this field.
+        write_stream: u8 = 0
     }
 
     pub const CODE = sys::IORING_OP_WRITE_FIXED;
@@ -296,7 +304,8 @@ opcode! {
             fd,
             buf, len, offset,
             buf_index,
-            ioprio, rw_flags
+            ioprio, rw_flags,
+            write_stream
         } = self;
 
         let mut sqe = sqe_zeroed();
@@ -307,6 +316,7 @@ opcode! {
         sqe.len = len;
         sqe.__bindgen_anon_1.off = offset;
         sqe.__bindgen_anon_3.rw_flags = rw_flags as _;
+        sqe.__bindgen_anon_5.__bindgen_anon_2.write_stream = write_stream;
         sqe.__bindgen_anon_4.buf_index = buf_index;
         Entry(sqe)
     }
@@ -954,7 +964,11 @@ opcode! {
         /// like the `read(2)` and `write(2)` system calls.
         offset: u64 = 0,
         ioprio: u16 = 0,
-        rw_flags: i32 = 0
+        rw_flags: i32 = 0,
+        /// `write_stream` identifies a write stream, added in Linux 6.16
+        /// (used by NVMe FDP, for example). `0` means no stream.
+        /// Older kernels ignore this field.
+        write_stream: u8 = 0
     }
 
     pub const CODE = sys::IORING_OP_WRITE;
@@ -963,7 +977,8 @@ opcode! {
         let Write {
             fd,
             buf, len, offset,
-            ioprio, rw_flags
+            ioprio, rw_flags,
+            write_stream
         } = self;
 
         let mut sqe = sqe_zeroed();
@@ -974,6 +989,7 @@ opcode! {
         sqe.len = len;
         sqe.__bindgen_anon_1.off = offset;
         sqe.__bindgen_anon_3.rw_flags = rw_flags as _;
+        sqe.__bindgen_anon_5.__bindgen_anon_2.write_stream = write_stream;
         Entry(sqe)
     }
 }
@@ -2359,12 +2375,15 @@ opcode! {
         ioprio: u16 = 0,
         offset: u64 = 0,
         rw_flags: i32 = 0,
+        /// Write stream id (Linux 6.16+); `0` means no stream.
+        /// Older kernels ignore this field.
+        write_stream: u8 = 0,
     }
 
     pub const CODE = sys::IORING_OP_WRITEV_FIXED;
 
     pub fn build(self) -> Entry {
-        let Self { fd, iovec, len, buf_index, offset, ioprio, rw_flags } = self;
+        let Self { fd, iovec, len, buf_index, offset, ioprio, rw_flags, write_stream } = self;
 
         let mut sqe = sqe_zeroed();
         sqe.opcode = Self::CODE;
@@ -2375,6 +2394,7 @@ opcode! {
         sqe.__bindgen_anon_4.buf_index = buf_index;
         sqe.ioprio = ioprio;
         sqe.__bindgen_anon_3.rw_flags = rw_flags as _;
+        sqe.__bindgen_anon_5.__bindgen_anon_2.write_stream = write_stream;
         Entry(sqe)
     }
 }
